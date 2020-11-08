@@ -1,0 +1,25 @@
+{
+  "name": "webrtc-mesh",
+  "version": "0.1.0",
+  "description": "using a signaler, mesh between node, browsers and other applications",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/dletta/webrtc-mesh"
+  },
+  "keywords": [
+    "webrtc",
+    "datachannel",
+    "mesh",
+    "decentralized",
+    "decentral"
+  ],
+  "author": "Jachen Duschletta",
+  "license": "MPL-2.0",
+  "dependencies": {
+    "wrtc": "^0.4.6"
+  }
+}
