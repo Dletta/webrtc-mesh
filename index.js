@@ -1,6 +1,6 @@
 /*
 webRTC-mesh by Jachen Duschletta 2020
-v 0.1.2
+v 0.1.3
 
 Purpose: Using WebRTC create a datachannel layer between all peers
   connecting to the same signaling server.
@@ -26,7 +26,6 @@ const Websocket = require('websocket')
 
 exports.wmesh = class wmesh {
     constructor(config) {
-      self = this;
       if(!config.url) {throw 'A signal server must be provided for the mesh to be built.'};
       this.server = config.url || '';
       this.appKey = config.key || {};
