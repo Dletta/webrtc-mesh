@@ -1,6 +1,6 @@
 {
   "name": "webrtc-mesh",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "using a signaler, mesh between node, browsers and other applications",
   "main": "index.js",
   "scripts": {
@@ -20,6 +20,7 @@
   "author": "Jachen Duschletta",
   "license": "MPL-2.0",
   "dependencies": {
+    "websocket": "^1.0.32",
     "wrtc": "^0.4.6"
   }
 }
