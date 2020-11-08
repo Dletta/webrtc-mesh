@@ -35,7 +35,7 @@ modules.exports.wmesh = exports.wmesh = (function() {
     (TURN servers are not currently supported )
     */
 
-  class wmesh (config) {
+  class wmesh {
     constructor(config) {
       self = this;
       if(!config.url) {throw 'A signal server must be provided for the mesh to be built.'};
