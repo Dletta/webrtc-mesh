@@ -163,7 +163,7 @@ exports.Mesh = function Mesh (config) {
   }
 
   async function connectRTC (pid, pc) {
-    console.log('connecting to ', pid);
+    if (debug) console.log('connecting to ', pid);
     // setup datachannel
     await setDataChannel(pc, pid)
     await createOffer(pc, pid)
@@ -184,7 +184,7 @@ exports.Mesh = function Mesh (config) {
 
     channel.onclose = handleDataChannelClose;
 
-    console.log('created data channel to', pid);
+    if (debug) console.log('created data channel to', pid);
     // add it to peers info
     var peer = peers.get(pid);
     peer.channel = channel;
@@ -235,7 +235,7 @@ exports.Mesh = function Mesh (config) {
   }
 
   function handleDataChannelClose (ev) {
-    console.log('channel closed', ev);
+    if (debug) console.log('channel closed', ev);
   }
 
   /* Create an offer for any peer that arrives after us
@@ -268,7 +268,7 @@ exports.Mesh = function Mesh (config) {
       var pid = msg.from; // the other guy
       //check if we already have a remote description
       if(debug){console.warn('received offer', msg, pc.currentRemoteDescription);}
-      if(pc.currentRemoteDescription == null) {
+      if(pc.currentRemoteDescription == null && msg.data != null && typeof msg.data == 'object') {
         await pc.setRemoteDescription(msg.data);
         if(debug){console.log('received Offer from other', pc.signalingState);}
 
@@ -304,8 +304,7 @@ exports.Mesh = function Mesh (config) {
     var pc = peer.conn;
     var pid = msg.from;
     //check if we already have a remote description
-    if(pc.currentRemoteDescription != null) { return; }
-
+    if(pc.currentRemoteDescription != null || msg.data == null) { return; }
     await pc.setRemoteDescription(msg.data);
     if(debug){console.log('set Answer to Remote Desc', pc.signalingState);}
   }
@@ -317,8 +316,10 @@ exports.Mesh = function Mesh (config) {
     var peer = peers.get(msg.from);
     var pc = peer.conn;
     var pid = msg.from;
-    await pc.addIceCandidate(msg.data);
-    if(debug){console.log('added candidate ', pc.signalingState);}
+    if (msg.data != null && typeof msg.data == 'object'){
+    	await pc.addIceCandidate(msg.data);
+    	if(debug){console.log('added candidate ', pc.signalingState);}
+    }
   }
 
   /* Create RTC connection */
@@ -365,7 +366,7 @@ exports.Mesh = function Mesh (config) {
     // setup listeners for pc, reuse from above for channels
 
     pc.ondatachannel = async function (e) {
-      console.log('received a datachannel', e);
+      if (debug) console.log('received a datachannel', e);
 
       channel = e.channel;
 
