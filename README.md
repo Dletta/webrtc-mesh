@@ -22,7 +22,8 @@ const Mesh = require('webrtc-mesh').Mesh;
 
 var config = {
   url: 'wss:websocket.url.server:port/',
-  key: 'appKey or Token for message filterin', //optional
+  key: 'appKey or Token for message filtering', //optional, default is 'mesh'
+  debug: false, //optional, default is false
 }
 
 var mesh = Mesh(config);
@@ -42,5 +43,5 @@ mesh.getPeer(peerId) // returns a specific peer from the map
 mesh.getPeerId() //return your peerId
 mesh.printPeers() // console print for quick check against connection status
 mesh.sendToAll(buffer || blob || string) //send to all peers
-mesh.onNewPeer( function ) // register a function to receive the 'onOpen' event of a new data channel (**not implemented yet**)
+mesh.onNewPeer( function ) // register a function to receive the 'onOpen' event of a new data channel
 ```

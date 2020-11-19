@@ -31,6 +31,7 @@ exports.Mesh = function Mesh (config) {
     */
   const peerId = generatePID();
   const appKey = config.appKey || 'mesh';
+  var debug = config.debug || false;
   var messageListener = [];
   var openListener = [];
 
@@ -78,10 +79,10 @@ exports.Mesh = function Mesh (config) {
     // receive the data into an object
     var msg = JSON.parse(event.data);
     if (msg.from == peerId || msg.length == 0 || msg.dam || msg.key != appKey) { return; } //don't listen to yourself
-    console.log(msg.to, msg.to == peerId, msg);
+    if(debug){console.log(msg.to, msg.to == peerId, msg);}
     // if we receive a peer announcement, add them to the list to try to connect to
     if (msg.announce) {
-      console.log('received announcement', msg);
+      if(debug){console.log('received announcement', msg);}
       if(msg.from == undefined) { return;}
       // add this new peer to our list of peers
       add(msg.from);
@@ -89,24 +90,24 @@ exports.Mesh = function Mesh (config) {
     // if we receive an offer, let's handle it
     } else if (msg.offer) {
       if(msg.to == peerId){
-        console.log('received offer from ', msg.from, msg);
+        if(debug){console.log('received offer from ', msg.from, msg);}
         handleOffer(msg);
       }
     // if we receive an answer, let's handle it
     } else if (msg.answer) {
       if(msg.to == peerId) {
-        console.log('received answer from ', msg.from, msg);
+        if(debug){console.log('received answer from ', msg.from, msg);}
         handleAnswer(msg);
       }
     } else if (msg.candidate) {
       if(msg.to == peerId) {
-        console.log('received candidate from ', msg.from, msg);
+        if(debug){console.log('received candidate from ', msg.from, msg);}
         handleCandidates(msg);
       }
     } else if (msg.left) {
       // remove this peer from our list
       config.leavehandler(msg.from);
-      console.log('removing', msg);
+      if(debug){console.log('removing', msg);}
       remove(msg.from);
     }
   });
@@ -115,10 +116,10 @@ exports.Mesh = function Mesh (config) {
 
   // add a new pid to the list of items
   function add (pid) {
-    console.log('called add');
+    if(debug){console.log('called add');}
     // check if we already have this item
     var haveIt = peers.has(pid)
-    console.warn('we have this peer:', pid, haveIt);
+    if(debug){console.warn('we have this peer:', pid, haveIt);}
     if(!haveIt) {
       // add new peer
       peers.set(pid, {status:'new'});
@@ -128,14 +129,14 @@ exports.Mesh = function Mesh (config) {
 
   // remove a  pid from the list of items
   function remove (pid) {
-    console.log('called remove', pid);
+    if(debug){console.log('called remove', pid);}
     // check if we already have this item
     var haveIt = peers.has(pid)
     if(haveIt) {
       var peer = peers.get(pid);
       peer.conn.close();
       peer.status = 'closed';
-      console.log('removed', pid);
+      if(debug){console.log('removed', pid);}
       // remove new peer
       peers.delete(pid);
     }
@@ -143,7 +144,7 @@ exports.Mesh = function Mesh (config) {
 
   // send offers to connections
   function connect () {
-    console.log('called connect');
+    if(debug){console.log('called connect');}
     // loop over the queue of waiting peers and
     while (queue.length>0) {
       // TODO: Check if peer already exists before re-doing
@@ -154,7 +155,7 @@ exports.Mesh = function Mesh (config) {
       peers.status = 'connecting';
       // update status into map
       peers.set(pid, peer);
-      console.log("updated status for pid", pid);
+      if(debug){console.log("updated status for pid", pid);}
 
       // start connection
       connectRTC(pid, peer.conn)
@@ -162,6 +163,7 @@ exports.Mesh = function Mesh (config) {
   }
 
   async function connectRTC (pid, pc) {
+    console.log('connecting to ', pid);
     // setup datachannel
     await setDataChannel(pc, pid)
     await createOffer(pc, pid)
@@ -172,7 +174,7 @@ exports.Mesh = function Mesh (config) {
   */
 
   async function setDataChannel (pc, pid) {
-    console.log("attempting connection to ", pid);
+    if(debug){console.log("attempting connection to ", pid);}
     channel = await pc.createDataChannel('mesh');
     channel.binaryType = 'arraybuffer';
 
@@ -182,7 +184,7 @@ exports.Mesh = function Mesh (config) {
 
     channel.onclose = handleDataChannelClose;
 
-    console.log('created data channel');
+    console.log('created data channel to', pid);
     // add it to peers info
     var peer = peers.get(pid);
     peer.channel = channel;
@@ -195,7 +197,7 @@ exports.Mesh = function Mesh (config) {
 
   function handleDataChannelOpen (ev) {
     try {
-      console.log('channel opened', ev);
+      if(debug){console.log('channel opened', ev);}
       var data = {
         type: "handshake",
         data: peerId
@@ -203,7 +205,7 @@ exports.Mesh = function Mesh (config) {
       var msg = JSON.stringify(data);
       channel.send(msg);
     } catch (e) {
-      console.log(e);
+      if(debug){console.log(e);}
     }
     openListener.forEach((item, i) => {
       item(ev)
@@ -214,7 +216,7 @@ exports.Mesh = function Mesh (config) {
   function handleDataChannelMessage (ev) {
     try{
       var msg = JSON.parse(ev.data);
-      console.warn('received MESSAGE=>:', msg);
+      if(debug){console.warn('received MESSAGE=>:', msg);}
       if(msg.type == "handshake") {
         var pid = msg.data;
         var peer = peers.get(pid);
@@ -223,7 +225,7 @@ exports.Mesh = function Mesh (config) {
         peers.set(pid, peer);
       }
     } catch (e) {
-      console.log(e);
+      if(debug){console.log(e);}
     }
 
     messageListener.forEach((item, i) => {
@@ -243,7 +245,7 @@ exports.Mesh = function Mesh (config) {
     var offer = await pc.createOffer();
     var plain = JSON.stringify(offer);
     await pc.setLocalDescription(offer);
-    console.log('created Offer for ', pid, pc.signalingState);
+    if(debug){console.log('created Offer for ', pid, pc.signalingState);}
     var data = {
       broadcast:true,
       to: pid,
@@ -265,14 +267,14 @@ exports.Mesh = function Mesh (config) {
       var pc = peer.conn;
       var pid = msg.from; // the other guy
       //check if we already have a remote description
-      console.warn('received offer', msg, pc.currentRemoteDescription);
+      if(debug){console.warn('received offer', msg, pc.currentRemoteDescription);}
       if(pc.currentRemoteDescription == null) {
         await pc.setRemoteDescription(msg.data);
-        console.log('received Offer from other', pc.signalingState);
+        if(debug){console.log('received Offer from other', pc.signalingState);}
 
         var answer = await pc.createAnswer();
         pc.setLocalDescription(answer);
-        console.log('create Answer', pc.signalingState);
+        if(debug){console.log('create Answer', pc.signalingState);}
         var data = {
           broadcast:true,
           to: pid,
@@ -286,7 +288,7 @@ exports.Mesh = function Mesh (config) {
       }
 
     } else {
-      console.log('create first for ', msg.from, msg);
+      if(debug){console.log('create first for ', msg.from, msg);}
       // if we never met this guy, we need to first create a new connection for him
       add(msg.from);
       var peer = createRTC(msg.from);
@@ -305,7 +307,7 @@ exports.Mesh = function Mesh (config) {
     if(pc.currentRemoteDescription != null) { return; }
 
     await pc.setRemoteDescription(msg.data);
-    console.log('set Answer to Remote Desc', pc.signalingState);
+    if(debug){console.log('set Answer to Remote Desc', pc.signalingState);}
   }
 
   /* When we receive candidates we need to handle them
@@ -316,12 +318,12 @@ exports.Mesh = function Mesh (config) {
     var pc = peer.conn;
     var pid = msg.from;
     await pc.addIceCandidate(msg.data);
-    console.log('added candidate ', pc.signalingState);
+    if(debug){console.log('added candidate ', pc.signalingState);}
   }
 
   /* Create RTC connection */
   function createRTC (pid) {
-    console.log('creating rtc for ', pid);
+    if(debug){console.log('creating rtc for ', pid);}
     // get status object
     var peer = peers.get(pid);
     // create peer connection
@@ -393,7 +395,7 @@ exports.Mesh = function Mesh (config) {
     };
 
     pc.oniceconnectionstatechange = () => {
-      console.log('ice connection state', pc.iceConnectionState);
+      if(debug){console.log('ice connection state', pc.iceConnectionState);}
       if (pc.iceConnectionState === "failed") {
         pc.restartIce();
       }
@@ -401,7 +403,7 @@ exports.Mesh = function Mesh (config) {
 
     // update status into map
     peers.set(pid, peer);
-    console.log("updated status for pid", pid);
+    if(debug){console.log("updated status for pid", pid);}
     return peer;
   }
 
@@ -457,15 +459,15 @@ exports.Mesh = function Mesh (config) {
 
 // to support piping into the stream we need below functions
     on: (eventName, cb) => {
-      console.log('on called', eventName, cb);
+      if(debug){console.log('on called', eventName, cb);}
     },
 
     once: (eventName, cb) => {
-      console.log('once called', eventName, cb);
+      if(debug){console.log('once called', eventName, cb);}
     },
 
     emit: (eventName, cb) => {
-      console.log('emit called', eventName, cb);
+      if(debug){console.log('emit called', eventName, cb);}
     },
 
     write: (data) => {
