@@ -223,6 +223,7 @@ exports.Mesh = function Mesh (config) {
         peer.channel = channel;
         peer.status = 'connected';
         peers.set(pid, peer);
+        return ;
       }
     } catch (e) {
       if(debug){console.log(e);}
