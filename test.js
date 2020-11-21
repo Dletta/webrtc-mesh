@@ -1,11 +1,13 @@
-var Mesh = require('index.js').Mesh;
+var Mesh = require('./index.js').Mesh;
 
-var mesh = exports.Mesh({
+var mesh = Mesh({
   url: 'wss://de.meething.space:443/',
   key: 'test',
   debug: false,
 })
 
-process.stdin.pipe(mesh);
-mesh.pipe((ev)=>{console.log(ev)});
-setTimeout(mesh.printPeers, 15000);
+var meshedStream = mesh.getStream();
+mesh.pipe(meshedStream.push.bind(meshedStream));
+process.stdin.pipe(meshedStream).pipe(process.stdout);
+mesh.data((ev)=>{console.log(ev.data)});
+setTimeout(mesh.printPeers, 10000);

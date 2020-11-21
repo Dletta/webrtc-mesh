@@ -35,6 +35,26 @@ mesh.pipe( (ev) => { //handle incoming data
 mesh.sendToAll( arrayBuffer(12) ) // or even just 'string of Json'
 ```
 
+### Initialize as Stream
+
+```javascript
+var Mesh = require('webrtc-mesh').Mesh;
+
+var config = {
+  url: 'wss:websocket.url.server:port/',
+  key: 'appKey or Token for message filtering', //optional, default is 'mesh'
+  debug: false, //optional, default is false
+}
+
+var mesh = Mesh(config)
+
+var meshedStream = mesh.getStream();
+mesh.pipe(meshedStream.push.bind(meshedStream));
+
+process.stdin.pipe(meshedStream).pipe(process.stdout);
+
+```
+
 ### Utilities
 
 ```javascript

@@ -22,6 +22,7 @@ Purpose: Using WebRTC create a datachannel layer between all peers
 const wrtc = require('wrtc');
 const WebSocket = require('websocket').w3cwebsocket;
 var RTCPeerConnection = wrtc.RTCPeerConnection;
+var { Duplex } = require('stream');
 
 
 exports.Mesh = function Mesh (config) {
@@ -33,6 +34,7 @@ exports.Mesh = function Mesh (config) {
   const appKey = config.appKey || 'mesh';
   var debug = config.debug || false;
   var messageListener = [];
+  var pipedListener = [];
   var openListener = [];
 
   /* Globals for State Management */
@@ -231,6 +233,10 @@ exports.Mesh = function Mesh (config) {
 
     messageListener.forEach((item, i) => {
       item(ev);
+    });
+
+    pipedListener.forEach((item, i) => {
+      item(Buffer.from(ev.data));
     });
 
   }
@@ -456,29 +462,27 @@ exports.Mesh = function Mesh (config) {
     },
 
     pipe: (cb) => {
+      pipedListener.push(cb)
+    },
+
+    data: (cb) => {
       messageListener.push(cb)
     },
 
-// to support piping into the stream we need below functions
-    on: (eventName, cb) => {
-      if(debug){console.log('on called', eventName, cb);}
-    },
-
-    once: (eventName, cb) => {
-      if(debug){console.log('once called', eventName, cb);}
-    },
-
-    emit: (eventName, cb) => {
-      if(debug){console.log('emit called', eventName, cb);}
-    },
-
-    write: (data) => {
-      peers.forEach((item, i) => {
-        if(item.channel.readyState == 'open') {
-          item.channel.send(data);
-        }
-      });
-    },
+    getStream: () => {
+      return new Duplex({
+        write(chunk, encoding, callback) {
+          peers.forEach((item, i) => {
+            if(item.channel.readyState == 'open') {
+              item.channel.send(chunk);
+            }
+          });
+          callback();
+        },
+        read() {
+        },
+      })
+    }
 
   }
 
