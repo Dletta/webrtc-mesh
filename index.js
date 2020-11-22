@@ -340,13 +340,13 @@ exports.Mesh = function Mesh (config) {
           iceCandidatePoolSize: 2,
           iceServers: [{
              urls: [
-               "stun:stun.stunprotocol.org:3478",
-               /*"stun:stun.l.google.com:19302",
+               /*"stun:stun.stunprotocol.org:3478",*/
+               "stun:stun.l.google.com:19302",
                "stun:stun1.l.google.com:19302",
                "stun:stun2.l.google.com:19302",
                "stun:stun3.l.google.com:19302",
                "stun:stun4.l.google.com:19302",
-               "stun:stun01.sipphone.com",
+               /*"stun:stun01.sipphone.com",
                "stun:stun.ekiga.net",
                "stun:stun.fwdnet.net",
                "stun:stun.ideasip.com",
@@ -359,7 +359,7 @@ exports.Mesh = function Mesh (config) {
                "stun:stun.voipbuster.com",
                "stun:stun.voipstunt.com",
                "stun:stun.voxgratia.org",
-               "stun:stun.xten.com",*/
+               "stun:stun.xten.com",//*/
              ]
            }
           ]

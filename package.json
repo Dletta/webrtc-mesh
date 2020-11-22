@@ -1,6 +1,6 @@
 {
   "name": "webrtc-mesh",
-  "version": "0.9.6-beta",
+  "version": "0.9.7-beta",
   "description": "using a signaler, mesh between node, browsers and other applications",
   "main": "index.js",
   "scripts": {
