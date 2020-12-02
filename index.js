@@ -473,8 +473,12 @@ exports.Mesh = function Mesh (config) {
       return new Duplex({
         write(chunk, encoding, callback) {
           peers.forEach((item, i) => {
-            if(item.channel.readyState == 'open') {
-              item.channel.send(chunk);
+            try {
+              if(item.channel && item.channel.readyState == 'open') {
+                item.channel.send(chunk);
+              }
+            } catch (e) {
+              if(debug){ console.log('stream', e)}
             }
           });
           callback();

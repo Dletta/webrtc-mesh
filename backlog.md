@@ -1,0 +1,5 @@
+-[ ] Switch protocol to Binary Only
+-[ ] Detect bad connections and 'close' them
+-[ ] Better connection state handling (ICE state / errors etc)
+-[ ] Generate new data channel for streams. (Keep main data channel for protocol communications and RPC calls)
+-[ ] RPC calls (relay my data to others, build a graph of connections to establish the mesh etc)
