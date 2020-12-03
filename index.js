@@ -19,6 +19,11 @@ Purpose: Using WebRTC create a datachannel layer between all peers
   Some of this code is from Mozilla Developer Network, but the rest is mostly
   my own homegrown hacks over the webRTC API built into browsers */
 
+/* node specific version due to 2 things:
+  - Dependency to simulate webrtc and websockets
+  - Exports since node doesn't support modules out of the box yet
+  */
+
 const wrtc = require('wrtc');
 const WebSocket = require('websocket').w3cwebsocket;
 var RTCPeerConnection = wrtc.RTCPeerConnection;
@@ -32,12 +37,12 @@ exports.Mesh = function Mesh (config) {
     */
   const peerId = generatePID();
   const appKey = config.appKey || 'mesh';
-  var debug = config.debug || false;
+  const debug = config.debug || false;
   var messageListener = [];
   var pipedListener = [];
   var openListener = [];
 
-  /* Globals for State Management */
+/* Globals for State Management */
   // map of PID containing status objects and connection reference, key = pid
   var peers = new Map();
   // queue of 'to connect to' peer ids (pid)
@@ -54,7 +59,7 @@ exports.Mesh = function Mesh (config) {
 
   /* Then we connect to the websocket signaling server using the 'json' (string or binary both supported)
   */
-  var ws = new WebSocket(config.url,'json')
+  var ws = new WebSocket(config.url,'binary')
 
   /* When the connection opens we want to broadcast ourselves to the other peers */
 
@@ -243,7 +248,7 @@ exports.Mesh = function Mesh (config) {
 
   function handleDataChannelClose (ev) {
     if (debug) console.log('channel closed', ev);
-  }
+  } //TODO: react to close event and make sure it was wanted
 
   /* Create an offer for any peer that arrives after us
   */
@@ -340,7 +345,7 @@ exports.Mesh = function Mesh (config) {
           iceCandidatePoolSize: 2,
           iceServers: [{
              urls: [
-               /*"stun:stun.stunprotocol.org:3478",*/
+               "stun:stun.stunprotocol.org:3478",
                "stun:stun.l.google.com:19302",
                "stun:stun1.l.google.com:19302",
                "stun:stun2.l.google.com:19302",
@@ -459,7 +464,7 @@ exports.Mesh = function Mesh (config) {
       }
       var msg = JSON.stringify(data);
       ws.send(msg)
-    },
+    }, //TODO: is there a node event that can fire this on CTRL-C exit?
 
     pipe: (cb) => {
       pipedListener.push(cb)
@@ -468,6 +473,8 @@ exports.Mesh = function Mesh (config) {
     data: (cb) => {
       messageListener.push(cb)
     },
+
+/* Node specific interface */
 
     getStream: () => {
       return new Duplex({
