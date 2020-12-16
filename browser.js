@@ -18,7 +18,7 @@ Purpose: Using WebRTC create a datachannel layer between all peers
 
   Some of this code is from Mozilla Developer Network, but the rest is mostly
   my own homegrown hacks over the webRTC API built into browsers */
-
+'use strict';
 
 export default class Mesh {
 
@@ -49,6 +49,12 @@ export default class Mesh {
     var peers = new Map();
     // queue of 'to connect to' peer ids (pid)
     var queue = [];
+    /*
+    initialize encoder / decoder interface to turn strings into arraybuffer.
+    The reason we do this is so we can stay binary across the wire, to make
+    handling it easier on each side. */
+    var encoder = new TextEncoder();
+    var decoder = new TextDecoder();
 
     /* We use UUID v4 algo for the uuid. */
 
@@ -183,8 +189,8 @@ export default class Mesh {
     */
 
     async function setDataChannel (pc, pid) {
-      if(debug){console.log("attempting connection to ", pid);}
-      channel = await pc.createDataChannel('mesh');
+      if(debug){console.log("opening connection to ", pid);}
+      var channel = await pc.createDataChannel('mesh');
       channel.binaryType = 'arraybuffer';
 
       channel.onmessage = handleDataChannelMessage;
@@ -212,7 +218,9 @@ export default class Mesh {
           data: peerId
         };
         var msg = JSON.stringify(data);
-        channel.send(msg);
+        var encMsg = encoder.encode("HSK"+msg);
+        var buffer = encMsg.buffer;
+        channel.send(buffer);
       } catch (e) {
         if(debug){console.log(e);}
       }
@@ -222,9 +230,8 @@ export default class Mesh {
 
     }
 
-    function handleDataChannelMessage (ev) {
+    function handleDataChannelMessage (msg) {
       try{
-        var msg = JSON.parse(ev.data);
         if(debug){console.warn('received MESSAGE=>:', msg);}
         if(msg.type == "handshake") {
           var pid = msg.data;
@@ -239,11 +246,11 @@ export default class Mesh {
       }
 
       messageListener.forEach((item, i) => {
-        item(ev);
+        item(msg);
       });
 
       pipedListener.forEach((item, i) => {
-        item(Buffer.from(ev.data));
+        item(Buffer.from(msg.data));
       });
 
     }
@@ -381,7 +388,7 @@ export default class Mesh {
       pc.ondatachannel = async function (e) {
         if (debug) console.log('received a datachannel', e);
 
-        channel = e.channel;
+        var channel = e.channel;
         channel.binaryType = 'arraybuffer';
 
         channel.onmessage = handleDataChannelMessage;

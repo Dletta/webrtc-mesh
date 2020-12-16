@@ -24,9 +24,12 @@ Purpose: Using WebRTC create a datachannel layer between all peers
   - Exports since node doesn't support modules out of the box yet
   */
 
+const util = require('util');
+var TextEncoder = util.TextEncoder;
 const wrtc = require('wrtc');
 const WebSocket = require('websocket').w3cwebsocket;
 var RTCPeerConnection = wrtc.RTCPeerConnection;
+
 var { Duplex } = require('stream');
 
 
@@ -34,12 +37,22 @@ exports.Mesh = function Mesh (config) {
 
   /* To identify yourself to the signaling server and to others
     We generate a random UUID as our peer ID.
+    This is not expected to be the same for every connection, it's supposed to serve as a
+    changing uuid that other clients can hold in memory and on the app side could associate
+    to a specific user.
     */
   const peerId = generatePID();
+  /* The appKey serves as a filter. This way the websocket server used could send multiple meshs
+   over the same server, without having to worry about routing or filtering broadcasts.
+   Instead we just assume we get flooded on the client and ignore what we don't want.
+   */
   const appKey = config.appKey || 'mesh';
   const debug = config.debug || false;
+  /* An array of callback function that are called upon arrival of new messages. */
   var messageListener = [];
+  /* An array of writable streams we write to */
   var pipedListener = [];
+  /* An array of callback functions subscribed to the 'open datachannel event' */
   var openListener = [];
 
 /* Globals for State Management */
@@ -47,6 +60,12 @@ exports.Mesh = function Mesh (config) {
   var peers = new Map();
   // queue of 'to connect to' peer ids (pid)
   var queue = [];
+  /*
+  initialize encoder / decoder interface to turn strings into arraybuffer.
+  The reason we do this is so we can stay binary across the wire, to make
+  handling it easier on each side. */
+  var encoder = new TextEncoder();
+  var decoder = new TextDecoder();
 
   /* We use UUID v4 algo for the uuid. */
 
@@ -181,8 +200,8 @@ exports.Mesh = function Mesh (config) {
   */
 
   async function setDataChannel (pc, pid) {
-    if(debug){console.log("attempting connection to ", pid);}
-    channel = await pc.createDataChannel('mesh');
+    if(debug){console.log("opening connection to ", pid);}
+    var channel = await pc.createDataChannel('mesh');
     channel.binaryType = 'arraybuffer';
 
     channel.onmessage = handleDataChannelMessage;
@@ -210,7 +229,9 @@ exports.Mesh = function Mesh (config) {
         data: peerId
       };
       var msg = JSON.stringify(data);
-      channel.send(msg);
+      var encMsg = encoder.encode("HSK"+msg);
+      var buffer = encMsg.buffer;
+      channel.send(buffer);
     } catch (e) {
       if(debug){console.log(e);}
     }
@@ -220,9 +241,8 @@ exports.Mesh = function Mesh (config) {
 
   }
 
-  function handleDataChannelMessage (ev) {
+  function handleDataChannelMessage (msg) {
     try{
-      var msg = JSON.parse(ev.data);
       if(debug){console.warn('received MESSAGE=>:', msg);}
       if(msg.type == "handshake") {
         var pid = msg.data;
@@ -237,11 +257,11 @@ exports.Mesh = function Mesh (config) {
     }
 
     messageListener.forEach((item, i) => {
-      item(ev);
+      item(msg);
     });
 
     pipedListener.forEach((item, i) => {
-      item(Buffer.from(ev.data));
+      item(Buffer.from(msg.data));
     });
 
   }
@@ -380,7 +400,7 @@ exports.Mesh = function Mesh (config) {
     pc.ondatachannel = async function (e) {
       if (debug) console.log('received a datachannel', e);
 
-      channel = e.channel;
+      var channel = e.channel;
 
       channel.binaryType = 'arraybuffer';
 
